@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+output/
+presets/
+textures/
+crash_report.txt
+test-project/
+test-results/
+tests/experiments/

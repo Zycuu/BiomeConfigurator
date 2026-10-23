@@ -1,0 +1,594 @@
+{
+  "forest": {
+    "attributes": {
+      "minecraft:audio/background_music": {
+        "default": {
+          "max_delay": 24000,
+          "min_delay": 12000,
+          "sound": "minecraft:music.overworld.forest"
+        }
+      },
+      "minecraft:gameplay/natural_mob_spawns": {
+        "argument": {
+          "spawn_costs": {},
+          "spawns_by_category": {
+            "ambient": [
+              {
+                "type": "minecraft:bat",
+                "count": 8,
+                "weight": 10
+              }
+            ],
+            "creature": [
+              {
+                "type": "minecraft:sheep",
+                "count": 4,
+                "weight": 12
+              },
+              {
+                "type": "minecraft:pig",
+                "count": 4,
+                "weight": 10
+              },
+              {
+                "type": "minecraft:chicken",
+                "count": 4,
+                "weight": 10
+              },
+              {
+                "type": "minecraft:cow",
+                "count": 4,
+                "weight": 8
+              },
+              {
+                "type": "minecraft:wolf",
+                "count": 4,
+                "weight": 5
+              }
+            ],
+            "monster": [
+              {
+                "type": "minecraft:spider",
+                "count": 4,
+                "weight": 100
+              },
+              {
+                "type": "minecraft:zombie",
+                "count": 4,
+                "weight": 95
+              },
+              {
+                "type": "minecraft:zombie_villager",
+                "count": 1,
+                "weight": 5
+              },
+              {
+                "type": "minecraft:skeleton",
+                "count": 4,
+                "weight": 100
+              },
+              {
+                "type": "minecraft:creeper",
+                "count": 4,
+                "weight": 100
+              },
+              {
+                "type": "minecraft:slime",
+                "count": 4,
+                "weight": 100
+              },
+              {
+                "type": "minecraft:enderman",
+                "count": {
+                  "type": "minecraft:uniform",
+                  "max_inclusive": 4,
+                  "min_inclusive": 1
+                },
+                "weight": 10
+              },
+              {
+                "type": "minecraft:witch",
+                "count": 1,
+                "weight": 5
+              }
+            ],
+            "underground_water_creature": [
+              {
+                "type": "minecraft:glow_squid",
+                "count": {
+                  "type": "minecraft:uniform",
+                  "max_inclusive": 6,
+                  "min_inclusive": 4
+                },
+                "weight": 10
+              }
+            ]
+          }
+        },
+        "modifier": "overlay"
+      },
+      "minecraft:visual/sky_color": "#79a6ff"
+    },
+    "carvers": [
+      "minecraft:cave",
+      "minecraft:cave_extra_underground",
+      "minecraft:canyon"
+    ],
+    "downfall": 0.8,
+    "effects": {
+      "water_color": "#3f76e4"
+    },
+    "features": [
+      [],
+      [
+        "minecraft:lake_lava_underground",
+        "minecraft:lake_lava_surface"
+      ],
+      [
+        "minecraft:amethyst_geode"
+      ],
+      [
+        "minecraft:monster_room",
+        "minecraft:monster_room_deep"
+      ],
+      [],
+      [],
+      [
+        "minecraft:ore_dirt",
+        "minecraft:ore_gravel",
+        "minecraft:ore_granite_upper",
+        "minecraft:ore_granite_lower",
+        "minecraft:ore_diorite_upper",
+        "minecraft:ore_diorite_lower",
+        "minecraft:ore_andesite_upper",
+        "minecraft:ore_andesite_lower",
+        "minecraft:ore_tuff",
+        "minecraft:ore_coal_upper",
+        "minecraft:ore_coal_lower",
+        "minecraft:ore_iron_upper",
+        "minecraft:ore_iron_middle",
+        "minecraft:ore_iron_small",
+        "minecraft:ore_gold",
+        "minecraft:ore_gold_lower",
+        "minecraft:ore_redstone",
+        "minecraft:ore_redstone_lower",
+        "minecraft:ore_diamond",
+        "minecraft:ore_diamond_medium",
+        "minecraft:ore_diamond_large",
+        "minecraft:ore_diamond_buried",
+        "minecraft:ore_lapis",
+        "minecraft:ore_lapis_buried",
+        "minecraft:ore_copper",
+        "minecraft:underwater_magma",
+        "minecraft:disk_sand",
+        "minecraft:disk_clay",
+        "minecraft:disk_gravel"
+      ],
+      [],
+      [
+        "minecraft:spring_water",
+        "minecraft:spring_lava"
+      ],
+      [
+        "minecraft:glow_lichen",
+        "minecraft:forest_flowers",
+        "minecraft:trees_birch_and_oak_leaf_litter",
+        "minecraft:patch_bush",
+        "minecraft:flower_default",
+        "minecraft:patch_grass_forest",
+        "minecraft:brown_mushroom_normal",
+        "minecraft:red_mushroom_normal",
+        "minecraft:patch_pumpkin",
+        "minecraft:patch_sugar_cane",
+        "minecraft:patch_firefly_bush_near_water"
+      ],
+      [
+        "minecraft:freeze_top_layer"
+      ]
+    ],
+    "has_precipitation": true,
+    "temperature": 0.7
+  },
+  "oak": {
+    "type": "minecraft:tree",
+    "below_trunk_provider": "minecraft:soil_beneath_tree",
+    "decorators": [],
+    "foliage_placer": {
+      "type": "minecraft:blob_foliage_placer",
+      "height": 3,
+      "offset": 0,
+      "radius": 2
+    },
+    "foliage_provider": {
+      "id": "minecraft:oak_leaves",
+      "properties": {
+        "distance": "7",
+        "persistent": "false",
+        "waterlogged": "false"
+      }
+    },
+    "ignore_vines": true,
+    "minimum_size": {
+      "type": "minecraft:two_layers_feature_size"
+    },
+    "trunk_placer": {
+      "type": "minecraft:straight_trunk_placer",
+      "base_height": 4,
+      "height_rand_a": 2,
+      "height_rand_b": 0
+    },
+    "trunk_provider": {
+      "id": "minecraft:oak_log",
+      "properties": {
+        "axis": "y"
+      }
+    }
+  },
+  "noise_settings": {
+    "aquifers": {
+      "barrier": {
+        "type": "minecraft:noise",
+        "noise": "minecraft:aquifer_barrier",
+        "xz_scale": 1.0,
+        "y_scale": 0.5
+      },
+      "exclusion": {
+        "type": "minecraft:min",
+        "left": {
+          "type": "minecraft:sub",
+          "left": -0.225,
+          "right": "minecraft:overworld/erosion"
+        },
+        "right": {
+          "type": "minecraft:max",
+          "left": {
+            "type": "minecraft:sub",
+            "left": "minecraft:overworld/depth",
+            "right": 0.9
+          },
+          "right": 0.0
+        }
+      },
+      "fluid_level_floodedness": {
+        "type": "minecraft:noise",
+        "noise": "minecraft:aquifer_fluid_level_floodedness",
+        "xz_scale": 1.0,
+        "y_scale": 0.67
+      },
+      "fluid_level_spread": {
+        "type": "minecraft:noise",
+        "noise": "minecraft:aquifer_fluid_level_spread",
+        "xz_scale": 1.0,
+        "y_scale": 0.7142857142857143
+      },
+      "lava": {
+        "type": "minecraft:noise",
+        "noise": "minecraft:aquifer_lava",
+        "xz_scale": 1.0,
+        "y_scale": 1.0
+      },
+      "surface_level": "minecraft:overworld/preliminary_surface_level"
+    },
+    "debug_functions": [
+      {
+        "function": "minecraft:overworld/final_density",
+        "label": "N"
+      },
+      {
+        "function": "minecraft:overworld/temperature",
+        "label": "T"
+      },
+      {
+        "function": "minecraft:overworld/vegetation",
+        "label": "V"
+      },
+      {
+        "function": "minecraft:overworld/continents",
+        "label": "C"
+      },
+      {
+        "function": "minecraft:overworld/erosion",
+        "label": "E"
+      },
+      {
+        "function": "minecraft:overworld/depth",
+        "label": "D"
+      },
+      {
+        "function": "minecraft:overworld/ridges",
+        "label": "W"
+      },
+      {
+        "function": {
+          "type": "minecraft:mul",
+          "left": {
+            "type": "minecraft:add",
+            "left": {
+              "type": "minecraft:abs",
+              "input": {
+                "type": "minecraft:add",
+                "left": {
+                  "type": "minecraft:abs",
+                  "input": "minecraft:overworld/ridges"
+                },
+                "right": -0.6666667
+              }
+            },
+            "right": -0.33333334
+          },
+          "right": -3.0
+        },
+        "label": "PV"
+      },
+      {
+        "function": "minecraft:overworld/preliminary_surface_level",
+        "label": "PS"
+      }
+    ],
+    "default_block": "minecraft:stone",
+    "default_fluid": "minecraft:water",
+    "disable_mob_generation": false,
+    "legacy_random_source": false,
+    "material_rule": "minecraft:overworld",
+    "noise": {
+      "height": 384,
+      "min_y": -64
+    },
+    "noise_router": {
+      "chunk_surface_level": "minecraft:overworld/chunk_surface_level",
+      "continents": "minecraft:overworld/continents",
+      "depth": "minecraft:overworld/depth",
+      "erosion": "minecraft:overworld/erosion",
+      "final_density": "minecraft:overworld/final_density",
+      "ridges": "minecraft:overworld/ridges",
+      "temperature": "minecraft:overworld/temperature",
+      "vegetation": "minecraft:overworld/vegetation"
+    },
+    "sea_level": 63,
+    "spawn_target": [
+      {
+        "minecraft:overworld/continents": [
+          -0.11,
+          1.0
+        ],
+        "minecraft:overworld/erosion": [
+          -1.0,
+          1.0
+        ],
+        "minecraft:overworld/ridges": [
+          -1.0,
+          -0.16
+        ],
+        "minecraft:overworld/temperature": [
+          -1.0,
+          1.0
+        ],
+        "minecraft:overworld/vegetation": [
+          -1.0,
+          1.0
+        ]
+      },
+      {
+        "minecraft:overworld/continents": [
+          -0.11,
+          1.0
+        ],
+        "minecraft:overworld/erosion": [
+          -1.0,
+          1.0
+        ],
+        "minecraft:overworld/ridges": [
+          0.16,
+          1.0
+        ],
+        "minecraft:overworld/temperature": [
+          -1.0,
+          1.0
+        ],
+        "minecraft:overworld/vegetation": [
+          -1.0,
+          1.0
+        ]
+      }
+    ]
+  },
+  "world_preset": {
+    "dimensions": {
+      "minecraft:overworld": {
+        "type": "minecraft:overworld",
+        "generator": {
+          "type": "minecraft:noise",
+          "biome_source": {
+            "type": "minecraft:multi_noise",
+            "preset": "minecraft:overworld"
+          },
+          "settings": "minecraft:overworld"
+        }
+      },
+      "minecraft:the_end": {
+        "type": "minecraft:the_end",
+        "generator": {
+          "type": "minecraft:noise",
+          "biome_source": {
+            "type": "minecraft:the_end"
+          },
+          "settings": "minecraft:end"
+        }
+      },
+      "minecraft:the_nether": {
+        "type": "minecraft:the_nether",
+        "generator": {
+          "type": "minecraft:noise",
+          "biome_source": {
+            "type": "minecraft:multi_noise",
+            "preset": "minecraft:nether"
+          },
+          "settings": "minecraft:nether"
+        }
+      }
+    }
+  },
+  "audio_examples": {
+    "ambient_sound": [
+      "minecraft:audio/ambient_sounds",
+      {
+        "additions": {
+          "sound": "minecraft:ambient.nether_wastes.additions",
+          "tick_chance": 0.0111
+        },
+        "loop": "minecraft:ambient.nether_wastes.loop",
+        "mood": {
+          "block_search_extent": 8,
+          "offset": 2.0,
+          "sound": "minecraft:ambient.nether_wastes.mood",
+          "tick_delay": 6000
+        }
+      }
+    ]
+  },
+  "grass_model": {
+    "parent": "block/block",
+    "textures": {
+      "particle": "block/dirt",
+      "bottom": "block/dirt",
+      "top": "block/grass_block_top",
+      "side": "block/grass_block_side",
+      "overlay": "block/grass_block_side_overlay"
+    },
+    "elements": [
+      {
+        "from": [
+          0,
+          0,
+          0
+        ],
+        "to": [
+          16,
+          16,
+          16
+        ],
+        "faces": {
+          "down": {
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ],
+            "texture": "#bottom",
+            "cullface": "down"
+          },
+          "up": {
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ],
+            "texture": "#top",
+            "cullface": "up",
+            "tintindex": 0
+          },
+          "north": {
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ],
+            "texture": "#side",
+            "cullface": "north"
+          },
+          "south": {
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ],
+            "texture": "#side",
+            "cullface": "south"
+          },
+          "west": {
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ],
+            "texture": "#side",
+            "cullface": "west"
+          },
+          "east": {
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ],
+            "texture": "#side",
+            "cullface": "east"
+          }
+        }
+      },
+      {
+        "from": [
+          0,
+          0,
+          0
+        ],
+        "to": [
+          16,
+          16,
+          16
+        ],
+        "faces": {
+          "north": {
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ],
+            "texture": "#overlay",
+            "tintindex": 0,
+            "cullface": "north"
+          },
+          "south": {
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ],
+            "texture": "#overlay",
+            "tintindex": 0,
+            "cullface": "south"
+          },
+          "west": {
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ],
+            "texture": "#overlay",
+            "tintindex": 0,
+            "cullface": "west"
+          },
+          "east": {
+            "uv": [
+              0,
+              0,
+              16,
+              16
+            ],
+            "texture": "#overlay",
+            "tintindex": 0,
+            "cullface": "east"
+          }
+        }
+      }
+    ]
+  }
+}

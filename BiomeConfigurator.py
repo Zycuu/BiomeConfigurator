@@ -1,3 +1,4 @@
+# Modified 2026-10-23: extract a scene drawing hook for the Fabric edition.
 import tkinter as tk
 from tkinter import ttk, colorchooser, filedialog, messagebox, simpledialog
 import json
@@ -959,19 +960,20 @@ class BiomeConfiguratorApp:
         origin_x, origin_y = width // 2, horizon - 10
         tile_w, tile_h, block_h = 16, 8, 16 
         
-        for x, y, z, block_type in self.scene_blocks:
-            sx = origin_x + (x - z) * tile_w
-            sy = origin_y + (x + z) * tile_h - (y * block_h)
-            
-            if hasattr(self, 'cached_blocks') and block_type in self.cached_blocks:
-                # Place image center-aligned at the top of the block
-                self.preview_canvas.create_image(sx, sy - tile_h, image=self.cached_blocks[block_type], anchor=tk.N, tags="static")
+        self.draw_scene(origin_x, origin_y, tile_w, tile_h, block_h)
         
         # Ensure new static background renders behind any active weather
         self.preview_canvas.tag_lower("static")
         
         # 5. Snow Level Overlay
         self.preview_canvas.create_text(width - 10, 10, anchor=tk.NE, text=self.snow_y_level.get(), fill="white", font=("Arial", 10, "bold"), tags=("overlay", "snow_text"))
+
+    def draw_scene(self, origin_x, origin_y, tile_w, tile_h, block_h):
+        for x, y, z, block_type in self.scene_blocks:
+            sx = origin_x + (x - z) * tile_w
+            sy = origin_y + (x + z) * tile_h - (y * block_h)
+            if hasattr(self, 'cached_blocks') and block_type in self.cached_blocks:
+                self.preview_canvas.create_image(sx, sy - tile_h, image=self.cached_blocks[block_type], anchor=tk.N, tags="static")
 
     def multiply_color_string(self, hex_color, factor):
         """Utility to multiply hex strings for flat colors."""
