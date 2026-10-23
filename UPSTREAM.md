@@ -20,3 +20,10 @@ TerraBlender's 26.3 API and dependency coordinates were checked against the
 official [Glitchfiend/TerraBlender](https://github.com/Glitchfiend/TerraBlender/tree/26.3)
 source and its Maven repository. The app's preview is illustrative; Minecraft is
 the authoritative renderer and generator.
+
+The v0.2 terrain viewer is implemented in `terrain_ui.py`, `terrain_renderer.py`,
+and `terrain_sampler.py`. The GPL source and compiled class for our bridge are in
+`bridge/`. The bridge loads existing Minecraft 26.3 libraries locally and reads
+server-data tags before sampling Overworld base heights. The bundled default JSON
+is numeric output from that sampler, not a copy of Minecraft code or artwork.
+The interactive renderer and illustrative tree markers are our own implementation.

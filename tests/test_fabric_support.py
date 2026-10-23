@@ -197,6 +197,8 @@ class ExportTests(unittest.TestCase):
                 self.assertTrue((self.project_dir / MANIFEST).exists())
                 errors.assert_not_called()
         finally:
+            for pending in root.tk.splitlist(root.tk.call("after", "info")):
+                root.after_cancel(pending)
             root.destroy()
             os.chdir(previous_cwd)
 

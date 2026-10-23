@@ -46,6 +46,43 @@ Use **Save Design** to retain the full palette/settings outside the project.
 can be exported into one project. Shared block IDs must have identical definitions.
 Create a unique ID when a material's texture or behavior differs between biomes.
 
+## Dynamic terrain visualizer (v0.2)
+
+Click **Open Minecraft Terrain Visualizer** below the palette preview. A bundled
+seed-0 sample appears immediately. For another landscape, enter a numeric or text
+seed, center X/Z, area size, and grid detail, then click **Generate Terrain**.
+The current landscape remains usable while sampling. **Cancel** stops the sampler.
+
+- Left drag orbits, right drag pans, and the wheel zooms. Reset and Top View help
+  inspect terrain. Water, mesh, and illustrative tree markers can be toggled.
+- Material selections and biome colors update the landscape live. The surface
+  uses sampled texture colors; this is not a full textured voxel renderer.
+- Height scale changes only the view. Exported generation stays at normal scale.
+- Save Image exports the displayed terrain to PNG.
+- New samples require **Java 25** in `JAVA_HOME` or IntelliJ's `~/.jdks`, plus the
+  normal Minecraft 26.3 Loom cache under `GRADLE_USER_HOME` or `~/.gradle`.
+  Run your 26.3 development client once to populate that cache. No extra mod,
+  Minecraft login, Python installation, or running game is needed by the EXE.
+- The sampler calls Minecraft's own `NoiseBasedChunkGenerator.getBaseHeight`
+  with vanilla Overworld noise settings. Samples show ocean-floor base heights
+  and sea-level water across the chosen area, independent of the palette.
+- This is a heightfield, not complete generated chunks. Caves, overhangs,
+  structures, exact trees/plants, surface-rule details, and biome borders are
+  omitted. Tree markers illustrate relative density, capped at 500 for speed.
+  Check the exported Preview world in Minecraft for authoritative results.
+- Seed, position, area, and view controls are preview settings only. They do not
+  export a terrain generator or fix the seed of a player's world. A biome alone
+  does not define terrain shape. Current exports retain normal Overworld terrain.
+- Logs and generated sample JSON are retained in
+  `%LOCALAPPDATA%\BiomeConfiguratorFabric\terrain-samples`. Source textures,
+  project files, and Minecraft saves are not touched by sampling.
+
+The bundled sample is generated from seed 0 at X/Z 0, spanning 256 blocks with
+65 x 65 samples. No Minecraft classes, game JARs, textures, or user artwork are
+bundled. `bridge/java` contains the full source of our small GPL Java bridge.
+Rebuild it with `python bridge/build_bridge.py` using an installed JDK 25 and
+populated 26.3 cache. The included bridge JAR contains only our own class.
+
 ## What export installs
 
 - Java block/item registration and client biome tint registration.
@@ -74,7 +111,9 @@ preserves partially written new files under the same backup folder.
 
 `.biome-configurator.json` records designs and hashes of generated files. Keep it
 with the project. The app never deletes worlds or regenerates existing chunks.
-It never executes project code, Gradle, Java, or downloaded binaries itself.
+It never executes selected project code or Gradle. The terrain sampler starts your
+installed Java 25 with our bridge and your cached vanilla Minecraft libraries.
+It does not run your mod, start a server, or open/save a world.
 Legacy staging is archived rather than deleted.
 
 ## Current scope and limits
@@ -84,9 +123,10 @@ Legacy staging is archived rather than deleted.
   scripts, and multi-module layouts are rejected rather than guessed.
 - New block IDs only. This version does not adopt blocks you already registered
   elsewhere in Java. Choose distinct IDs to prevent duplicate registrations.
-- Palette and approximate density preview, not an embedded Minecraft renderer.
-  It displays the first frame of animated textures. The preview is not evidence
-  of actual generated terrain height, tree distribution, shaders, or lighting.
+- The small palette scene is illustrative. The separate Terrain Visualizer samples
+  actual vanilla 26.3 base terrain heights, then applies an approximate palette.
+  Neither preview reproduces Minecraft rendering, shaders, or lighting. Animated
+  textures show their first frame; tree markers do not use actual feature placement.
 - Grass terrain is static. Grass spreading, saplings, bonemeal growth, stripped
   logs, planks, wood crafting, special ore behavior, and custom tree shapes are
   outside this first version.
@@ -106,7 +146,12 @@ Legacy staging is archived rather than deleted.
 The export has also been tested against a disposable copy of a 26.3 Fabric
 project: shared/client Java compilation, built JAR dependency inclusion, and a
 Fabric headless GameTest loading the biome/material data and generating a custom
-tree on custom dirt. A GUI smoke test loads the source palette and all seven tabs.
+tree on custom dirt. The 20 automated tests cover export preservation, the palette, camera controls,
+water clipping, sample validation, and sampler cancellation. A packaged-app smoke
+test also generated seed-42 terrain and loaded all custom materials. Run
+`python tests/terrain_integration.py` for an opt-in check using your installed
+Minecraft cache: bundled seed reproduction, seed variation, and matching adjacent
+sample edges. This does not start Minecraft or modify a mod project.
 An interactive Minecraft client visual review is still recommended.
 
 See `tests/GAMETEST.md` for integration-test setup and `UPSTREAM.md` for provenance.
@@ -115,7 +160,7 @@ See `tests/GAMETEST.md` for integration-test setup and `UPSTREAM.md` for provena
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install pyinstaller
-.\.venv\Scripts\python.exe -m PyInstaller --onefile --windowed --name BiomeConfiguratorFabric --icon icon.ico --add-data "minecraft_26_3_templates.json;." FabricBiomeConfigurator.py
+.\.venv\Scripts\python.exe -m PyInstaller --onefile --windowed --name BiomeConfiguratorFabric --icon icon.ico --add-data "minecraft_26_3_templates.json;." --add-data "default_terrain_26_3.json;." --add-data "bridge/terrain-sampler-26.3.jar;bridge" FabricBiomeConfigurator.py
 ```
 
 ## Credits and license

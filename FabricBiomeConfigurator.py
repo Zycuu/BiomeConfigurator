@@ -13,6 +13,7 @@ def main():
     parser.add_argument("--project", help="Existing Fabric project folder")
     parser.add_argument("--textures", help="Folder containing block PNG textures")
     parser.add_argument("--smoke-report", help=argparse.SUPPRESS)
+    parser.add_argument("--smoke-terrain", action="store_true", help=argparse.SUPPRESS)
     options = parser.parse_args()
     data_dir = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "BiomeConfiguratorFabric"
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -30,6 +31,19 @@ def main():
             app.refresh_palette()
             root.update()
             report = {"ready": True, "preview": app.preview_status.get(), "materials": sorted(app.cached_blocks)}
+            if options.smoke_terrain:
+                from terrain_sampler import SampleRequest, sample_terrain
+                app.open_terrain()
+                root.update()
+                view = app.terrain_window
+                view.render()
+                sample = sample_terrain(SampleRequest(seed=42), data_dir / "terrain-samples")
+                view.sample = sample
+                view.render()
+                image_path = Path(options.smoke_report).with_suffix(".png")
+                view.last_image.save(image_path)
+                report["terrain"] = {"seed": sample["seed"], "min_height": sample["min_height"], "max_height": sample["max_height"], "image": str(image_path)}
+                view.close()
             Path(options.smoke_report).write_text(json.dumps(report, indent=2), encoding="utf-8")
             root.destroy()
             return 0

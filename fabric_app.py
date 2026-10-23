@@ -32,6 +32,7 @@ class FabricBiomeConfiguratorApp(BiomeConfiguratorApp):
         self.texture_combos = []
         self._refresh_pending = False
         self._palette_stamp = 0
+        self.terrain_window = None
         super().__init__(root)
         root.title("Biome Configurator Fabric - Minecraft 26.3")
         root.geometry("1180x980")
@@ -59,6 +60,14 @@ class FabricBiomeConfiguratorApp(BiomeConfiguratorApp):
         self.build_project_tab(project_tab)
         self.build_materials_tab(materials_tab)
         self.build_generation_tab(generation_tab)
+        ttk.Button(self.root, text="Open Minecraft Terrain Visualizer...", command=self.open_terrain).pack(fill=tk.X, padx=10, pady=5)
+
+    def open_terrain(self):
+        if self.terrain_window is not None:
+            self.terrain_window.window.lift()
+            return
+        from terrain_ui import TerrainWindow
+        self.terrain_window = TerrainWindow(self)
 
     def relabel_buttons(self, widget):
         if isinstance(widget, ttk.Button):
