@@ -165,6 +165,9 @@ def surface_rule(project, designs):
                        "false_at_and_above": {"absolute": int(design["deep_y"]) + 8}}, block(ids["deepstone"])),
             block(ids["stone"]),
         ]}
-        rules.append(condition({"type": "minecraft:biome", "biome_is": f"{project.namespace}:{name}"}, layers))
+        from worldgen_studio import settings
+        biomes = [f"{project.namespace}:{name}"]
+        if settings(design)["terrain"]!="Vanilla Overworld":biomes.append(f"{project.namespace}:{name}_studio")
+        rules.append(condition({"type": "minecraft:biome", "biome_is": biomes}, layers))
     rules.append("minecraft:overworld")
     return {"type": "minecraft:sequence", "sequence": rules}

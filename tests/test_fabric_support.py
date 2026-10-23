@@ -41,6 +41,8 @@ class ExportTests(unittest.TestCase):
         self.assertEqual(mod["entrypoints"]["main"][0], "example.Main")
         self.assertEqual(len(mod["entrypoints"]["main"]), 2)
         self.assertIn("terrablender", mod["entrypoints"])
+        motion=json.loads((self.project_dir / "src/main/resources/data/minecraft/tags/block/blocks_motion.json").read_text())
+        self.assertIn("example:gloomstone",motion["values"])
         self.assertIn("include implementation", (self.project_dir / "biome-configurator.gradle").read_text())
         self.assertTrue((self.project_dir / "src/client/java/biomeconfig/generated/m_example/GeneratedClient.java").exists())
         self.assertTrue(any(path.endswith(".png.mcmeta") for path in plan.files))

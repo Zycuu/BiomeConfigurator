@@ -27,3 +27,8 @@ and `terrain_sampler.py`. The GPL source and compiled class for our bridge are i
 server-data tags before sampling Overworld base heights. The bundled default JSON
 is numeric output from that sampler, not a copy of Minecraft code or artwork.
 The interactive renderer and illustrative tree markers are our own implementation.
+
+Version 0.3 adds worldgen_studio.py, axis-aligned voxel rendering, volume sampling
+through the installed Minecraft engine, exportable custom density graphs, noise
+cave controls, ore features, and the Worldgen Studio UI. The presets are original
+compositions of vanilla density nodes. The app does not redistribute game code.

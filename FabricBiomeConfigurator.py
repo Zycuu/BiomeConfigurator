@@ -37,12 +37,13 @@ def main():
                 root.update()
                 view = app.terrain_window
                 view.render()
-                sample = sample_terrain(SampleRequest(seed=42), data_dir / "terrain-samples")
+                from worldgen_studio import preset
+                sample = sample_terrain(SampleRequest(seed=42, span=32, grid=33), data_dir / "terrain-samples", worldgen=preset("Canyons"), volume=True)
                 view.sample = sample
                 view.render()
                 image_path = Path(options.smoke_report).with_suffix(".png")
                 view.last_image.save(image_path)
-                report["terrain"] = {"seed": sample["seed"], "min_height": sample["min_height"], "max_height": sample["max_height"], "image": str(image_path)}
+                report["terrain"] = {"seed": sample["seed"], "min_height": sample["min_height"], "max_height": sample["max_height"], "image": str(image_path), "landform": sample["worldgen"]["terrain"], "voxel_columns": len(sample["columns"])}
                 view.close()
             Path(options.smoke_report).write_text(json.dumps(report, indent=2), encoding="utf-8")
             root.destroy()

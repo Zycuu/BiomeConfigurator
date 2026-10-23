@@ -8,7 +8,13 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from terrain_sampler import SampleRequest, SampleCancelled, minecraft_seed, validate_sample, sample_terrain
+from terrain_sampler import (
+    SampleRequest,
+    SampleCancelled,
+    minecraft_seed,
+    validate_sample,
+    sample_terrain,
+)
 from terrain_renderer import TerrainRenderer, clip_water
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,7 +32,12 @@ class TerrainTests(unittest.TestCase):
             minecraft_seed("")
 
     def test_bounds_and_grid_are_validated_before_launch(self):
-        for request in (SampleRequest(center_x=30000000), SampleRequest(span=17), SampleRequest(grid=12), SampleRequest(seed=1 << 63)):
+        for request in (
+            SampleRequest(center_x=30000000),
+            SampleRequest(span=17),
+            SampleRequest(grid=12),
+            SampleRequest(seed=1 << 63),
+        ):
             with self.assertRaises(ValueError):
                 request.validate()
 
@@ -36,7 +47,11 @@ class TerrainTests(unittest.TestCase):
         bad["heights"][0].pop()
         with self.assertRaises(ValueError):
             validate_sample(bad)
-        for key, value in (("minecraft", "1.21"), ("max_height", 999), ("origin_x", 234)):
+        for key, value in (
+            ("minecraft", "1.21"),
+            ("max_height", 999),
+            ("origin_x", 234),
+        ):
             with self.subTest(key=key), self.assertRaises(ValueError):
                 validate_sample(dict(self.sample, **{key: value}))
 
@@ -54,13 +69,16 @@ class TerrainTests(unittest.TestCase):
         first = renderer.render(self.sample, (640, 400), {}, trees=False)
         renderer.yaw += 1
         second = renderer.render(self.sample, (640, 400), {}, trees=False)
-        third = renderer.render(self.sample, (640, 400), {"grass": (250, 30, 40)}, trees=False)
+        third = renderer.render(
+            self.sample, (640, 400), {"grass": (250, 30, 40)}, trees=False
+        )
         self.assertNotEqual(first.tobytes(), second.tobytes())
         self.assertNotEqual(second.tobytes(), third.tobytes())
         self.assertEqual(original, self.sample)
 
     def test_viewer_tracks_palette_orbit_zoom_and_unregisters_on_close(self):
         from fabric_app import FabricBiomeConfiguratorApp
+
         root = tk.Tk()
         root.withdraw()
         try:
@@ -75,14 +93,17 @@ class TerrainTests(unittest.TestCase):
             self.assertNotEqual(first, view.last_image.tobytes())
             view.start_drag(SimpleNamespace(x=10, y=10))
             view.orbit(SimpleNamespace(x=50, y=30))
-            self.assertNotEqual(view.renderer.yaw, -.72)
+            self.assertNotEqual(view.renderer.yaw, -0.72)
             view.zoom(SimpleNamespace(delta=120))
             self.assertGreater(view.renderer.zoom, 1)
             variables = [variable for variable, _ in view.traces]
             before = [len(variable.trace_info()) for variable in variables]
             view.close()
             self.assertTrue(view.cancel.is_set())
-            self.assertEqual([len(variable.trace_info()) for variable in variables], [count - 1 for count in before])
+            self.assertEqual(
+                [len(variable.trace_info()) for variable in variables],
+                [count - 1 for count in before],
+            )
             self.assertIsNone(app.terrain_window)
         finally:
             for pending in root.tk.splitlist(root.tk.call("after", "info")):
@@ -94,7 +115,10 @@ class TerrainTests(unittest.TestCase):
         cancel.set()
         process = unittest.mock.Mock()
         process.poll.return_value = None
-        with patch("terrain_sampler.discover_runtime", return_value=(Path("java"), [Path("bridge.jar")])), patch("terrain_sampler.subprocess.Popen", return_value=process):
+        with patch(
+            "terrain_sampler.discover_runtime",
+            return_value=(Path("java"), [Path("bridge.jar")]),
+        ), patch("terrain_sampler.subprocess.Popen", return_value=process):
             with self.assertRaises(SampleCancelled):
                 sample_terrain(SampleRequest(), Path(tempfile.mkdtemp()), cancel=cancel)
         process.terminate.assert_called_once()

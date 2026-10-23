@@ -164,6 +164,8 @@ def texture_image(design, role, preview=False):
 
 
 def validate_design(design):
+    from worldgen_studio import settings, validate
+    validate(settings(design))
     valid_path(design["biome"])
     if "/" in design["biome"]:
         raise ValueError("Use a simple biome name without slashes in this first version.")
@@ -193,7 +195,7 @@ def validate_design(design):
         raise ValueError("Choose one of the supported Overworld placement templates.")
 
 
-def build_biome(design, namespace):
+def build_biome(design, namespace, studio=False):
     """Use 26.3 environment attributes, not removed legacy spawn/effect fields."""
     attrs = {f"minecraft:visual/{key}": value.lower() for key, value in design["colors"].items()
              if key in {"sky_color", "fog_color", "water_fog_color"}}
@@ -236,6 +238,15 @@ def build_biome(design, namespace):
     base.update({"attributes": attrs, "effects": effects, "temperature": float(design["temperature"]),
                  "downfall": float(design["downfall"]), "has_precipitation": bool(design["has_precipitation"])})
     base["features"][9] = [f"{namespace}:bc/{design['biome']}/{name}" for name in ("tree1", "tree2", "short_grass", "dusk_grass", "tall_grass")]
+    from worldgen_studio import settings
+    config = settings(design)
+    if studio and config["terrain"] != "Vanilla Overworld":
+        base["carvers"] = []
+    if not config["vanilla_ores"]:
+        base["features"][6] = []
+    for flag,index in (("lakes",1),("geodes",2),("dungeons",3),("springs",8)):
+        if not config[flag]:base["features"][index]=[]
+    base["features"][6] += [f"{namespace}:bc/{design['biome']}/ore_{ore['name']}" for ore in config["ores"] if ore["count"] > 0]
     return base
 
 
@@ -466,14 +477,25 @@ def emit_biome(plan, design):
             {"type": "minecraft:block_predicate_filter", "predicate": {"type": "minecraft:matching_block_tag", "tag": "minecraft:air"}},
         ]})
     # A dedicated preview world type uses our material rule even without TerraBlender's multi-noise biome source.
-    noise = template("noise_settings")
-    noise["material_rule"] = f"{ns}:bc_surface"
+    from worldgen_studio import settings, noise_settings, ore_resources
+    config = settings(design)
+    if config["terrain"] != "Vanilla Overworld":
+        plan.put(f"{base}/worldgen/biome/{biome}_studio.json", build_biome(design, ns, studio=True))
+    noise = noise_settings(template("noise_settings"), config, f"{ns}:bc_surface")
     plan.put(f"{base}/worldgen/noise_settings/bc/{biome}_preview.json", noise)
     preset = template("world_preset")
     generator = preset["dimensions"]["minecraft:overworld"]["generator"]
     generator["settings"] = f"{ns}:bc/{biome}_preview"
-    generator["biome_source"] = {"type": "minecraft:fixed", "biome": f"{ns}:{biome}"}
+    studio_biome=biome+"_studio" if config["terrain"]!="Vanilla Overworld" else biome
+    generator["biome_source"] = {"type": "minecraft:fixed", "biome": f"{ns}:{studio_biome}"}
     plan.put(f"{base}/worldgen/world_preset/{biome}_preview.json", preset)
+    for ore in config["ores"]:
+        feature, placement = ore_resources(ore)
+        key = f"bc/{biome}/ore_{ore['name']}"
+        plan.put(f"{base}/worldgen/feature/{key}.json", feature)
+        plan.put(f"{base}/worldgen/placed_feature/{key}.json", {"feature": f"{ns}:{key}", "placement": placement})
+    if config["dimension"]:
+        plan.put(f"{base}/dimension/{config['dimension_id']}.json", {"type": "minecraft:overworld", "generator": generator})
 
 
 def emit_tags(plan, materials, designs):
@@ -493,14 +515,21 @@ def emit_tags(plan, materials, designs):
                         "animals_spawnable_on": {"grass"}, "base_stone_overworld": {"stone", "deepstone"},
                         "stone_ore_replaceables": {"stone"}, "deepslate_ore_replaceables": {"deepstone"}}.items():
         tag("block/" + name, [f"{ns}:{name_}" for name_, mat in materials.items() if mat["kind"] in kinds])
-    tag("worldgen/biome/is_overworld", [f"{ns}:{biome}" for biome in designs])
-    tag("worldgen/biome/is_forest", [f"{ns}:{biome}" for biome in designs])
+    # 26.3 heightmap predicates use data-driven motion tags, not copied Block properties.
+    tag("block/blocks_motion", [f"{ns}:{name}" for name,mat in materials.items() if mat["kind"] not in {"plant","tall"}])
+    from worldgen_studio import settings
+    biome_ids = [f"{ns}:{biome}" for biome in designs]
+    biome_ids += [f"{ns}:{biome}_studio" for biome,design in designs.items() if settings(design)["terrain"]!="Vanilla Overworld"]
+    tag("worldgen/biome/is_overworld", biome_ids)
+    tag("worldgen/biome/is_forest", biome_ids)
     tag("worldgen/world_preset/normal", [f"{ns}:{biome}_preview" for biome in designs])
     def lang(data):
         for block in materials:
             data.setdefault(f"block.{ns}.{block}", block.replace("_", " ").title())
         for biome in designs:
             data.setdefault(f"biome.{ns}.{biome}", biome.replace("_", " ").title())
+            if settings(designs[biome])["terrain"]!="Vanilla Overworld":
+                data.setdefault(f"biome.{ns}.{biome}_studio", biome.replace("_", " ").title())
             data.setdefault(f"generator.{ns}.{biome}_preview", biome.replace("_", " ").title() + " Preview")
     plan.merge_json(f"src/main/resources/assets/{ns}/lang/en_us.json", lang)
 

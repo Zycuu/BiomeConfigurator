@@ -1,4 +1,5 @@
 """Small CPU heightfield renderer. Samples are real terrain; vegetation is illustrative."""
+
 import math
 import random
 from PIL import Image, ImageDraw
@@ -20,115 +21,278 @@ def clip_water(vertices, level):
             result.append((current[0], level, current[2]))
         if inside != next_inside:
             ratio = (level - current[1]) / (following[1] - current[1])
-            result.append((current[0] + ratio * (following[0] - current[0]), level,
-                           current[2] + ratio * (following[2] - current[2])))
+            result.append(
+                (
+                    current[0] + ratio * (following[0] - current[0]),
+                    level,
+                    current[2] + ratio * (following[2] - current[2]),
+                )
+            )
     return result
+
+
+def occupied_columns(sample):
+    import base64
+
+    if "columns" in sample:
+        return [
+            [int.from_bytes(base64.b64decode(value), "little") for value in row]
+            for row in sample["columns"]
+        ]
+    return [[(1 << max(0, h + 64)) - 1 for h in row] for row in sample["heights"]]
+
+
+def bit_runs(bits):
+    while bits:
+        start = (bits & -bits).bit_length() - 1
+        remaining = bits >> start
+        length = (remaining ^ (remaining + 1)).bit_length() - 1
+        end = start + length
+        yield start, end
+        bits &= ~(((1 << length) - 1) << start)
+
+
+def voxel_mesh(sample, y_limit=320, cut=1.0, floor_y=-64):
+    """Expose axis-aligned voxel faces. Vertical runs are merged without changing the surface."""
+    columns = occupied_columns(sample)
+    n, step, span = sample["grid"] - 1, sample["step"], sample["span"]
+    width = max(1, min(n, round(n * cut)))
+    mask = (1 << max(0, min(384, int(y_limit) + 64))) - 1
+    mask &= ~((1 << max(0, min(384, int(floor_y) + 64))) - 1)
+    columns = [[bits & mask for bits in row] for row in columns]
+    mesh = []
+
+    def face(points, normal, y, top=False):
+        mesh.append((points, normal, y, top))
+
+    for z in range(n):
+        for x in range(width):
+            bits = columns[z][x]
+            if not bits:
+                continue
+            px, pz = x * step - span / 2, z * step - span / 2
+            for start, end in bit_runs(bits):
+                low, high = start - 64, end - 64
+                face(
+                    [
+                        (px, high, pz),
+                        (px + step, high, pz),
+                        (px + step, high, pz + step),
+                        (px, high, pz + step),
+                    ],
+                    (0, 1, 0),
+                    high,
+                    high == sample["heights"][z][x],
+                )
+                face(
+                    [
+                        (px, low, pz),
+                        (px + step, low, pz),
+                        (px + step, low, pz + step),
+                        (px, low, pz + step),
+                    ],
+                    (0, -1, 0),
+                    low,
+                )
+            for dx, dz in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                nx, nz = x + dx, z + dz
+                other = columns[nz][nx] if 0 <= nx < width and 0 <= nz < n else 0
+                for start, end in bit_runs(bits & ~other):
+                    low, high = start - 64, end - 64
+                    if dx:
+                        fx = px + (step if dx > 0 else 0)
+                        points = [
+                            (fx, low, pz),
+                            (fx, high, pz),
+                            (fx, high, pz + step),
+                            (fx, low, pz + step),
+                        ]
+                    else:
+                        fz = pz + (step if dz > 0 else 0)
+                        points = [
+                            (px, low, fz),
+                            (px, high, fz),
+                            (px + step, high, fz),
+                            (px + step, low, fz),
+                        ]
+                    face(points, (dx, 0, dz), (low + high) / 2)
+    return mesh
 
 
 class TerrainRenderer:
     def __init__(self):
-        self.yaw = -.72
-        self.pitch = .62
+        self.yaw = -0.72
+        self.pitch = 0.62
         self.zoom = 1.0
         self.pan_x = self.pan_y = 0
         self.vertical = 1.0
+        self.y_limit = 320
+        self.cut = 1.0
+        self.floor_y = -64
+        self._mesh_key = None
+        self._mesh = []
 
     def reset(self):
         self.__init__()
 
     def render(self, sample, size, palette, water=True, trees=True, wire=False):
         width, height = max(100, size[0]), max(100, size[1])
-        image = Image.new("RGB", (width, height), "#121b24")
+        image = Image.new("RGB", (width, height), "#111b26")
         draw = ImageDraw.Draw(image)
-        for y in range(height):
-            t = y / height
-            draw.line((0, y, width, y), fill=(round(18 + 15*t), round(27 + 17*t), round(36 + 18*t)))
-        n, span, heights = sample["grid"], sample["span"], sample["heights"]
-        step, sea = sample["step"], sample["sea_level"]
-        mid = (sample["min_height"] + max(sea, sample["max_height"])) / 2
-        scale = min(width * .65, height * .95) / span * self.zoom
-        cy, sy, cp, sp = math.cos(self.yaw), math.sin(self.yaw), math.cos(self.pitch), math.sin(self.pitch)
+        n, span, step = sample["grid"] - 1, sample["span"], sample["step"]
+        cy, sy, cp, sp = (
+            math.cos(self.yaw),
+            math.sin(self.yaw),
+            math.cos(self.pitch),
+            math.sin(self.pitch),
+        )
+        top = min(self.y_limit, sample["max_height"])
+        mid = (self.floor_y + top) / 2
+        scale = (
+            min(
+                width * 0.63 / span,
+                height * 0.78 / max(1, (top - self.floor_y) * abs(cp) + span * abs(sp)),
+            )
+            * self.zoom
+        )
 
         def project(point):
-            x, elevation, z = point
-            horizontal = cy*x - sy*z
-            away = sy*x + cy*z
-            y = (elevation - mid) * self.vertical
-            return (width/2 + self.pan_x + horizontal*scale,
-                    height*.49 + self.pan_y + (away*sp - y*cp)*scale,
-                    -away*cp - y*sp)
+            x, y, z = point
+            horizontal = cy * x - sy * z
+            away = sy * x + cy * z
+            elevation = (y - mid) * self.vertical
+            return (
+                width / 2 + self.pan_x + horizontal * scale,
+                height * 0.48 + self.pan_y + (away * sp - elevation * cp) * scale,
+                -away * cp - elevation * sp,
+            )
 
-        grass = palette.get("grass", (88, 114, 78))
-        stone = palette.get("stone", (90, 94, 100))
-        dirt = palette.get("dirt", (96, 78, 66))
-        water_color = palette.get("water", (43, 97, 135))
+        key = (id(sample), self.y_limit, self.cut, self.floor_y)
+        if key != self._mesh_key:
+            self._mesh = voxel_mesh(sample, self.y_limit, self.cut, self.floor_y)
+            self._mesh_key = key
         faces = []
 
-        def face(vertices, color, outline=None):
-            points = [project(point) for point in vertices]
-            faces.append((sum(p[2] for p in points)/len(points), [(p[0], p[1]) for p in points], color, outline))
+        def face(points, color, courses=False):
+            projected = [project(p) for p in points]
+            lines = []
+            if courses and wire and scale > 2.5:
+                low, high = points[0][1], points[1][1]
+                for y in range(math.floor(low) + 1, math.ceil(high)):
+                    t = (y - low) / (high - low)
+                    a = project(
+                        tuple(
+                            points[0][i] + t * (points[1][i] - points[0][i])
+                            for i in range(3)
+                        )
+                    )
+                    b = project(
+                        tuple(
+                            points[3][i] + t * (points[2][i] - points[3][i])
+                            for i in range(3)
+                        )
+                    )
+                    lines.append((a[0], a[1], b[0], b[1]))
+            faces.append(
+                (
+                    sum(p[2] for p in projected) / len(projected),
+                    [(p[0], p[1]) for p in projected],
+                    color,
+                    lines,
+                )
+            )
 
-        base = sample["min_height"] - 18
-        # Solid cutaway skirts make the sampled region read as a terrain slice.
-        for i in range(n-1):
-            p = -span/2 + i*step
-            for a, b in [((p, heights[0][i], -span/2), (p+step, heights[0][i+1], -span/2)),
-                         ((p, heights[-1][i], span/2), (p+step, heights[-1][i+1], span/2)),
-                         ((-span/2, heights[i][0], p), (-span/2, heights[i+1][0], p+step)),
-                         ((span/2, heights[i][-1], p), (span/2, heights[i+1][-1], p+step))]:
-                face([a, b, (b[0], base, b[2]), (a[0], base, a[2])], shade(stone, .52))
-                face([a, b, (b[0], b[1]-3, b[2]), (a[0], a[1]-3, a[2])], shade(dirt, .68))
-        pattern = palette.get("grass_pixels")
-        for z in range(n-1):
-            for x in range(n-1):
-                px, pz = x*step-span/2, z*step-span/2
-                h00, h10 = heights[z][x], heights[z][x+1]
-                h01, h11 = heights[z+1][x], heights[z+1][x+1]
-                points = [(px,h00,pz),(px+step,h10,pz),(px+step,h11,pz+step),(px,h01,pz+step)]
-                dx = ((h10+h11)-(h00+h01))/(2*step)
-                dz = ((h01+h11)-(h00+h10))/(2*step)
-                slope = math.hypot(dx,dz)
-                normal = math.sqrt(dx*dx+dz*dz+1)
-                light = .55 + .48*max(0, (-dx*(-.5)+.8-dz*(-.3))/normal)
-                color = stone if slope > 1.3 else grass
-                if pattern and slope <= 1.3:
-                    color = pattern[(z % 16)*16+(x % 16)]
-                if sum((h00,h10,h01,h11))/4 < sea-1:
-                    color = shade(dirt,.82)
-                face(points, shade(color,light), shade(color,.60) if wire else None)
-                if water and min(h00,h10,h01,h11) < sea:
-                    for triangle in ([points[0],points[1],points[2]], [points[0],points[2],points[3]]):
-                        polygon = clip_water(triangle,sea+.08)
-                        if len(polygon)>=3:
-                            face(polygon, shade(water_color,.90+((x+z)%5)*.015))
-        if trees:
-            rng = random.Random(int(sample["seed"]) ^ sample["center_x"] ^ (sample["center_z"] << 1))
-            # Markers are deliberately bounded and not presented as Minecraft feature placements.
-            first, second = palette.get("tree1_count",3), palette.get("tree2_count",2)
-            count = min(500, round((first+second)*span*span/256*.13))
+        grass = palette.get("grass", (106, 134, 91))
+        stone = palette.get("stone", (103, 109, 116))
+        dirt = palette.get("dirt", (112, 88, 68))
+        deep = palette.get("deepstone", (60, 65, 73))
+        deep_y = palette.get("deep_y", 0)
+        light = (-0.45, 0.83, -0.3)
+        for points, normal, y, top in self._mesh:
+            if normal[0] * sy * cp + normal[1] * sp + normal[2] * cy * cp <= 0:
+                continue
+            color = grass if top else deep if y < deep_y else stone
+            if not top and points[0][1] > sample["max_height"] - 3:
+                color = dirt
+            brightness = 0.66 + 0.42 * max(0, sum(a * b for a, b in zip(normal, light)))
+            face(points, shade(color, brightness), normal[1] == 0)
+        sea = sample["sea_level"]
+        floating = sample.get("worldgen", {}).get("terrain") == "Floating Islands"
+        fluid = sample.get("worldgen", {}).get("fluid", "Water")
+        if water and not floating and fluid != "Air" and sea < self.y_limit:
+            for z in range(n):
+                for x in range(min(n, round(n * self.cut))):
+                    if sample["heights"][z][x] <= sea:
+                        px, pz = x * step - span / 2, z * step - span / 2
+                        face(
+                            [
+                                (px, sea, pz),
+                                (px + step, sea, pz),
+                                (px + step, sea, pz + step),
+                                (px, sea, pz + step),
+                            ],
+                            (
+                                (218, 91, 25)
+                                if fluid == "Lava"
+                                else palette.get("water", (50, 100, 139))
+                            ),
+                        )
+        if trees and self.y_limit >= sample["max_height"]:
+            rng = random.Random(int(sample["seed"]))
+            first, second = palette.get("tree1_count", 3), palette.get("tree2_count", 2)
+            count = min(400, round((first + second) * span * span / 256 * 0.08))
             for _ in range(count):
-                x,z = rng.randrange(1,n-1),rng.randrange(1,n-1)
-                h = heights[z][x]
-                if h<=sea or abs(h-heights[z][x+1])+abs(h-heights[z+1][x]) > step*1.5:
+                x, z = rng.randrange(n), rng.randrange(n)
+                y = sample["heights"][z][x]
+                if y <= sea or x >= round(n * self.cut):
                     continue
-                kind = "tree1" if rng.random() < first/max(1,first+second) else "tree2"
-                leaf = palette.get(kind+"_leaves",(63,99,68))
-                bark = palette.get(kind+"_log",(73,59,45))
-                # Small 3D crown and trunk, sorted with terrain for occlusion.
-                tx,tz = x*step-span/2,z*step-span/2
-                trunk_h = 5+rng.randrange(3)
-                r = 2.1
-                face([(tx-.45,h,tz),(tx+.45,h,tz),(tx+.45,h+trunk_h,tz),(tx-.45,h+trunk_h,tz)],bark)
-                y=h+trunk_h
-                face([(tx-r,y,tz-r),(tx+r,y,tz-r),(tx+r,y,tz+r),(tx-r,y,tz+r)],shade(leaf,.78))
-                face([(tx-r,y,tz-r),(tx+r,y,tz-r),(tx+r,y+3,tz-r),(tx-r,y+3,tz-r)],shade(leaf,.72))
-                face([(tx-r,y,tz+r),(tx+r,y,tz+r),(tx+r,y+3,tz+r),(tx-r,y+3,tz+r)],shade(leaf,.86))
-                face([(tx-r,y+3,tz-r),(tx+r,y+3,tz-r),(tx+r,y+3,tz+r),(tx-r,y+3,tz+r)],leaf)
-        for _, polygon, color, outline in sorted(faces, key=lambda item:item[0], reverse=True):
-            draw.polygon(polygon,fill=color,outline=outline)
-        # Scale, coordinates, and key remain readable independently of the camera.
-        draw.rounded_rectangle((16,16,385,83),radius=8,fill="#15212d",outline="#344556")
-        draw.text((28,26),f"MINECRAFT 26.3  /  BASE TERRAIN",fill="#b8d7e3")
-        draw.text((28,45),f"{span} x {span} blocks  |  Y {sample['min_height']} to {sample['max_height']}",fill="#e0e9ec")
-        draw.text((28,63),f"X {sample['center_x']}  Z {sample['center_z']}  |  Sea level {sea}",fill="#aab9c1")
+                kind = (
+                    "tree1"
+                    if rng.random() < first / max(1, first + second)
+                    else "tree2"
+                )
+                tx, tz = x * step - span / 2, z * step - span / 2
+                for low, high, r, color in [
+                    (y, y + 5, 0.5, palette.get(kind + "_log", (77, 62, 48))),
+                    (y + 4, y + 7, 2, palette.get(kind + "_leaves", (66, 105, 64))),
+                ]:
+                    face(
+                        [
+                            (tx - r, high, tz - r),
+                            (tx + r, high, tz - r),
+                            (tx + r, high, tz + r),
+                            (tx - r, high, tz + r),
+                        ],
+                        color,
+                    )
+                    for dx, dz in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                        if dx * sy + dz * cy <= 0:
+                            continue
+                        points = [
+                            (tx + dx * r - dz * r, low, tz + dz * r + dx * r),
+                            (tx + dx * r - dz * r, high, tz + dz * r + dx * r),
+                            (tx + dx * r + dz * r, high, tz + dz * r - dx * r),
+                            (tx + dx * r + dz * r, low, tz + dz * r - dx * r),
+                        ]
+                        face(points, shade(color, 0.8 if dx else 0.68))
+        for _, polygon, color, lines in sorted(faces, key=lambda p: p[0], reverse=True):
+            draw.polygon(
+                polygon, fill=color, outline=shade(color, 0.86) if wire else None
+            )
+            for line in lines:
+                draw.line(line, fill=shade(color, 0.86))
+        draw.rounded_rectangle(
+            (14, 14, 380, 82), radius=7, fill="#172738", outline="#365069"
+        )
+        draw.text((25, 24), "MINECRAFT 26.3 / BLOCK TERRAIN", fill="#bcd8e9")
+        draw.text(
+            (25, 44),
+            f"{span} x {span} blocks | sample spacing {step} | sea Y {sea}",
+            fill="#e3edf6",
+        )
+        draw.text(
+            (25, 62),
+            f"Seed {sample['seed']} | X {sample['center_x']} Z {sample['center_z']}",
+            fill="#9db5c8",
+        )
         return image

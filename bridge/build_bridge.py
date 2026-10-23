@@ -1,4 +1,5 @@
 """Rebuild only our GPL Java bridge using the installed JDK and cached game dependencies."""
+
 from pathlib import Path
 import subprocess
 import sys
@@ -15,14 +16,37 @@ def main():
     executable = ".exe" if java.suffix == ".exe" else ""
     classes = ROOT / "build" / ("terrain-classes-" + uuid.uuid4().hex[:8])
     classes.mkdir(parents=True)
-    subprocess.run([str(java.with_name("javac" + executable)), "--release", "25", "-cp",
-                    __import__("os").pathsep.join(map(str, libraries[1:])), "-d", str(classes),
-                    str(ROOT / "bridge/java/terrainbridge/TerrainSampler.java")], check=True)
+    subprocess.run(
+        [
+            str(java.with_name("javac" + executable)),
+            "--release",
+            "25",
+            "-cp",
+            __import__("os").pathsep.join(map(str, libraries[1:])),
+            "-d",
+            str(classes),
+            str(ROOT / "bridge/java/terrainbridge/TerrainSampler.java"),
+        ],
+        check=True,
+    )
     jar = ROOT / "bridge/terrain-sampler-26.3.jar"
-    subprocess.run([str(java.with_name("jar" + executable)), "--create", "--file", str(jar),
-                    "-C", str(classes), "terrainbridge"], check=True)
+    subprocess.run(
+        [
+            str(java.with_name("jar" + executable)),
+            "--create",
+            "--file",
+            str(jar),
+            "-C",
+            str(classes),
+            "terrainbridge",
+        ],
+        check=True,
+    )
     with zipfile.ZipFile(jar) as archive:
-        assert all(name.startswith(("META-INF/", "terrainbridge/")) for name in archive.namelist())
+        assert all(
+            name.startswith(("META-INF/", "terrainbridge/"))
+            for name in archive.namelist()
+        )
     print("Built", jar)
 
 

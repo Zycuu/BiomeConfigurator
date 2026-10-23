@@ -13,6 +13,23 @@ import net.minecraft.world.level.levelgen.Heightmap;
 /** Integration smoke test against a disposable Far Dark project copy. */
 public final class GeneratedBiomeGameTest {
     @GameTest(maxTicks = 200)
+    public void customOrePlacesInCustomStone(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var feature = level.registryAccess().lookupOrThrow(Registries.FEATURE)
+            .getValue(Identifier.parse("far_dark:bc/gloam_woods/ore_studio_diamond"));
+        if (feature == null) { helper.fail("Studio ore feature is missing"); return; }
+        Block stone = BuiltInRegistries.BLOCK.getValue(Identifier.parse("far_dark:gloomstone"));
+        BlockPos start = helper.absolutePos(new BlockPos(0, 1, 0));
+        for (int x=0;x<16;x++) for (int y=0;y<16;y++) for (int z=0;z<16;z++)
+            level.setBlock(start.offset(x,y,z), stone.defaultBlockState(), 2);
+        feature.place(level, level.getChunkSource().getGenerator(), RandomSource.create(416), start.offset(8,8,8));
+        boolean found=false;
+        for (int x=0;x<16;x++) for (int y=0;y<16;y++) for (int z=0;z<16;z++)
+            if (level.getBlockState(start.offset(x,y,z)).is(net.minecraft.world.level.block.Blocks.DIAMOND_ORE)) found=true;
+        if (!found) { helper.fail("Studio ore did not replace custom Gloomstone"); return; }
+        helper.succeed();
+    }
+    @GameTest(maxTicks = 200)
     public void biomeAndTreesLoad(GameTestHelper helper) {
         var level = helper.getLevel();
         var access = level.registryAccess();

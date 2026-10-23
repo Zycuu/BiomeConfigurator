@@ -1,170 +1,165 @@
-# Biome Configurator Fabric
+# Biome Configurator Studio, Fabric 26.3
 
-A modified edition of **aepplestan's Biome Configurator**, focused on selecting
-custom textures, previewing a biome palette, and installing generated content into
-an existing **Minecraft Java 26.3 Fabric** project.
+A GPL fork of aepplestan's Biome Configurator for Minecraft Java **26.3 Fabric**.
+Version 0.3 adds an integrated world-generation workbench with block geometry,
+editable landforms, noise caves, ore rules, and protected project export.
 
-## Start
+## Start and workflow
 
-Windows: open `BiomeConfiguratorFabric.exe` from the packaged build. Python is not
-required for that build. No mod project is changed merely by opening the app.
+Open `BiomeConfiguratorFabric.exe`. Python is not required by the Windows build.
+Choose your existing Fabric project and block PNG folder in **Fabric Project**.
+The main editor handles material IDs/textures, biome tint, climate, atmosphere,
+audio, mobs, and tree/plant counts. Open **Worldgen Studio** for terrain and caves.
 
-From source:
+1. Choose a landform in Terrain. Selecting one loads sensible starter parameters.
+2. Enter a seed and X/Z position. Use Area 64/Grid 65 or Area 128/Grid 129 for
+   **one-block sampling**. Larger area with the same grid is a coarser preview.
+3. Click Generate Terrain. The previous sample stays usable while Minecraft
+   samples the edited graph in a background process. Cancel stops that process.
+4. Drag left to orbit, drag right to pan, and use the wheel to zoom. Surface,
+   Half cutaway, and Horizontal slice inspect the same sampled solid blocks.
+   Slice Y selects a horizontal block layer. Palette edits update colors live.
+   Auto regenerate optionally resamples when generation settings change.
+5. Add ore rules and feature options. Save Design retains the complete setup.
+6. Review & Export to Fabric lists every file change before writing. Existing
+   changed files receive backups. Reload Gradle, run Minecraft, and create a new
+   `<Biome Name> Preview` world to check final terrain, materials, and features.
+
+The block preview has horizontal tops and vertical sides, not sloping polygons.
+It uses a voxel occupancy sample for underground noise caves and floating land.
+At coarse spacing, columns represent multiple horizontal blocks. Palette colors
+are derived from selected textures; this is not a full textured Minecraft renderer.
+
+## Landforms
+
+The studio includes Vanilla Overworld, Flatlands, Rolling Hills, Mountains,
+Ridged Highlands, Plateaus, Dunes, Archipelago, Ocean Basins, Canyons, and Floating
+Islands. Custom presets export real Minecraft density graphs, not viewing effects.
+Controls include base elevation, relief amplitude, landform wavelength, detail,
+sea level/fluid, plateau step height, and floating island thickness.
+
+Relief amplitude is not an exact maximum peak height. Flatlands ignores relief
+and detail. Floating islands use air instead of a sea. Water, lava, and air can
+otherwise be selected. Save Image writes the displayed view as PNG.
+
+Custom noise caves support None, Tunnels, Chambers, or Mixed, with density,
+size multiplier, and vertical limits. Larger density opens more underground space.
+Vanilla Overworld intentionally retains its stock density graph and noise caves;
+select a custom landform to use the custom cave controls.
+
+## What applies where
+
+Terrain and noise caves are properties of a chunk generator, not just a biome.
+Custom shape is installed into the dedicated Preview world preset. Normal
+Overworld placement retains the Overworld's generator and carvers.
+
+For custom landforms the exporter creates an internal `<biome>_studio` biome for
+Preview worlds and optional new dimensions. It shares the design's palette and
+features but omits vanilla carvers so extra tunnels do not bypass the selected
+noise cave settings. Material rules apply to both biome variants.
+
+The Export tab can also create a **new dimension** using this generator. Enter a
+new lowercase path; the mod namespace is added automatically. It uses Overworld
+dimension physics. It does not adopt Far Dark's existing clocks, sky rendering,
+or lighting. Existing unmanaged dimension files are protected by preflight.
+The tool never replaces the global Overworld dimension definition.
+
+## Ores and features
+
+Ore rules use an existing registered block ID, attempts per chunk, vein size,
+minimum/maximum Y, uniform/triangle distribution, and air-exposure discard chance.
+Use the dropdown for vanilla ores or type an ID already registered by your mod.
+The tool does not create a new ore block from that ID. The chart illustrates the
+vertical attempt distribution, not exact vein locations or guaranteed output.
+Real ore features and placements are exported. The exporter extends the custom
+stone replacement and 26.3 motion-blocking tags required by heightmaps.
+
+Features provides tree/plant counts and switches for vanilla lava lakes, geodes,
+monster rooms, and springs. The Ores tab separately controls the vanilla
+underground feature set, which also contains stone patches and disks.
+
+The viewport does not simulate placed ore veins, decorations, structures, final
+surface-rule painting, vanilla carvers, or shaders. Tree markers only illustrate
+density. Underground fluid volumes are not drawn. Always inspect a new Preview
+world for the final result. Vanilla structures are not a structure-placement editor.
+
+## Materials and project integration
+
+Select PNGs in Materials for grass, dirt, two stones, short/tall plants, and two
+log/leaf families. Tinted mode exports grayscale copies while preserving alpha;
+untinted mode retains painted colors. Original textures and `.png.mcmeta` files
+are preserved. Animated textures show their first frame in the palette preview.
+
+Export installs Java block/item registration, client tint registration, models,
+item definitions, loot, tags, language entries, biome/feature/material rules,
+noise settings, a Preview world preset, and optional dimension data. It adds a
+TerraBlender dependency and preserves existing initializer entries. TerraBlender
+is included in the built mod JAR; Fabric API is a normal dependency.
+
+Supported projects: single-project Groovy Fabric Loom templates for 26.3 with
+shared or split client/main sources. Other versions/layouts are rejected rather
+than guessed. New generated block IDs must not duplicate existing registrations.
+Grass is static terrain; spreading, saplings, wood crafting, and custom ore
+behavior remain mod-code work. Tree generators use vanilla oak shapes.
+
+## Preservation
+
+Opening the app and sampling terrain do not change a selected project. Export
+checks conflicts and changes made after review. Edited generated files stop an
+export. Every changed existing file is backed up under
+`.biome-configurator-backups/<timestamp>/originals/`; interrupted new files are
+preserved with the backup. `.biome-configurator.json` tracks designs and hashes.
+Several biome designs can share a project. Shared block definitions must agree.
+No worlds are deleted or regenerated. Legacy staging is archived, not deleted.
+Use new test worlds after changing world generation.
+
+## Runtime and source build
+
+Fresh sampling needs Java 25 in JAVA_HOME or IntelliJ's `~/.jdks`, and a populated
+Minecraft 26.3 Loom cache under GRADLE_USER_HOME or `~/.gradle`. Run the Fabric
+26.3 development client once to populate it. The app runs our own Java bridge
+against those cached vanilla libraries. It does not run selected mod code or
+Gradle, start a server, or require a Minecraft login for sampling.
+
+Logs and sample/request JSON are retained under
+`%LOCALAPPDATA%/BiomeConfiguratorFabric/terrain-samples`. The bundled initial
+sample uses seed 0, X/Z 0, a 64-block area, and a 65 by 65 grid. No Minecraft game
+JARs, game classes, textures, sounds, or user artwork are included in the build.
+The bridge JAR contains only our own GPL class; its source is in bridge/java.
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe FabricBiomeConfigurator.py
-```
-
-App presets and crash reports are stored in `%LOCALAPPDATA%\BiomeConfiguratorFabric`.
-
-## Workflow
-
-1. In **Fabric Project**, select the folder containing `build.gradle`,
-   `gradle.properties`, and `src/main/resources/fabric.mod.json`.
-2. Choose the folder containing your block PNG textures. The starter palette uses
-   Duskgrass, Ash Dirt, Gloomstone, Deepstone, Gloom Oak, and Ashwood filenames.
-   Select different files and block IDs in **Materials** as needed.
-3. Select whether grass/plants and leaves use their painted colors or biome tint.
-   Tint mode exports grayscale copies with preserved alpha. Original PNGs and
-   matching `.png.mcmeta` files are preserved.
-4. Set tree attempts, ground cover, stone transition height, placement template,
-   and region weight in **Generation**. Adjust atmosphere, climate, and mobs in
-   the existing tabs. No selected mobs means no natural biome mob spawns.
-5. Give the biome a lowercase name, such as `gloam_woods`.
-6. Click **Review & Export to Fabric**. Read the list, then choose
-   **Export with Backups** to apply it.
-7. Reload Gradle in IntelliJ and launch Minecraft. The first sync downloads
-   TerraBlender and Fabric API from their Maven repositories.
-8. Create a **new world**. Choose `<Biome Name> Preview` as the world type to see
-   only this biome, or use Default for natural placement in the Overworld.
-   Generated blocks are available in the Natural Blocks creative tab and `/give`.
-
-Use **Save Design** to retain the full palette/settings outside the project.
-**Load Last Project Design** reopens the last installed design. Several biomes
-can be exported into one project. Shared block IDs must have identical definitions.
-Create a unique ID when a material's texture or behavior differs between biomes.
-
-## Dynamic terrain visualizer (v0.2)
-
-Click **Open Minecraft Terrain Visualizer** below the palette preview. A bundled
-seed-0 sample appears immediately. For another landscape, enter a numeric or text
-seed, center X/Z, area size, and grid detail, then click **Generate Terrain**.
-The current landscape remains usable while sampling. **Cancel** stops the sampler.
-
-- Left drag orbits, right drag pans, and the wheel zooms. Reset and Top View help
-  inspect terrain. Water, mesh, and illustrative tree markers can be toggled.
-- Material selections and biome colors update the landscape live. The surface
-  uses sampled texture colors; this is not a full textured voxel renderer.
-- Height scale changes only the view. Exported generation stays at normal scale.
-- Save Image exports the displayed terrain to PNG.
-- New samples require **Java 25** in `JAVA_HOME` or IntelliJ's `~/.jdks`, plus the
-  normal Minecraft 26.3 Loom cache under `GRADLE_USER_HOME` or `~/.gradle`.
-  Run your 26.3 development client once to populate that cache. No extra mod,
-  Minecraft login, Python installation, or running game is needed by the EXE.
-- The sampler calls Minecraft's own `NoiseBasedChunkGenerator.getBaseHeight`
-  with vanilla Overworld noise settings. Samples show ocean-floor base heights
-  and sea-level water across the chosen area, independent of the palette.
-- This is a heightfield, not complete generated chunks. Caves, overhangs,
-  structures, exact trees/plants, surface-rule details, and biome borders are
-  omitted. Tree markers illustrate relative density, capped at 500 for speed.
-  Check the exported Preview world in Minecraft for authoritative results.
-- Seed, position, area, and view controls are preview settings only. They do not
-  export a terrain generator or fix the seed of a player's world. A biome alone
-  does not define terrain shape. Current exports retain normal Overworld terrain.
-- Logs and generated sample JSON are retained in
-  `%LOCALAPPDATA%\BiomeConfiguratorFabric\terrain-samples`. Source textures,
-  project files, and Minecraft saves are not touched by sampling.
-
-The bundled sample is generated from seed 0 at X/Z 0, spanning 256 blocks with
-65 x 65 samples. No Minecraft classes, game JARs, textures, or user artwork are
-bundled. `bridge/java` contains the full source of our small GPL Java bridge.
-Rebuild it with `python bridge/build_bridge.py` using an installed JDK 25 and
-populated 26.3 cache. The included bridge JAR contains only our own class.
-
-## What export installs
-
-- Java block/item registration and client biome tint registration.
-- Two generated log/leaves families with oak-shaped tree features.
-- Grass terrain, dirt, two stones, two short plants, and a double-height plant.
-- Block states, models, item definitions, loot tables, mining/soil/log/leaf tags,
-  English names, textures, and texture metadata.
-- Minecraft 26.3 biome JSON using the current environment-attribute spawn format.
-- Tree and plant features and their placement settings.
-- Material rules for the custom surface, subsoil, stone, and deep stone.
-- TerraBlender region integration so the biome appears naturally in new
-  Overworld generation. It uses a regional vanilla-biome overlay rather than
-  replacing the whole Overworld dimension definition.
-- A separate single-biome Preview world type.
-- `biome-configurator.gradle` and one apply line in `build.gradle`.
-  TerraBlender 26.3.0.0.9 is included in the built mod JAR. Fabric API remains a
-  normal mod dependency. Existing initializer entries are retained.
-
-## Preservation and recovery
-
-The exporter preflights all changes. Conflicting unmanaged files, edited generated
-files, and changes made after review stop the export. Every changed existing file
-is copied under `.biome-configurator-backups/<timestamp>/originals/` before writes.
-`changes.json` records the affected paths. A failed write restores originals and
-preserves partially written new files under the same backup folder.
-
-`.biome-configurator.json` records designs and hashes of generated files. Keep it
-with the project. The app never deletes worlds or regenerates existing chunks.
-It never executes selected project code or Gradle. The terrain sampler starts your
-installed Java 25 with our bridge and your cached vanilla Minecraft libraries.
-It does not run your mod, start a server, or open/save a world.
-Legacy staging is archived rather than deleted.
-
-## Current scope and limits
-
-- Minecraft **26.3**, a single-project Groovy `build.gradle` Fabric Loom template,
-  with either shared or split client/main sources. Other versions, Kotlin build
-  scripts, and multi-module layouts are rejected rather than guessed.
-- New block IDs only. This version does not adopt blocks you already registered
-  elsewhere in Java. Choose distinct IDs to prevent duplicate registrations.
-- The small palette scene is illustrative. The separate Terrain Visualizer samples
-  actual vanilla 26.3 base terrain heights, then applies an approximate palette.
-  Neither preview reproduces Minecraft rendering, shaders, or lighting. Animated
-  textures show their first frame; tree markers do not use actual feature placement.
-- Grass terrain is static. Grass spreading, saplings, bonemeal growth, stripped
-  logs, planks, wood crafting, special ore behavior, and custom tree shapes are
-  outside this first version.
-- Basic self-drop loot is generated. Leaf sapling/shears behavior and plant loot
-  balancing are future work.
-- Worldgen changes affect new chunks/worlds. Always test in a new world first.
-- The default Preview world changes neither the normal Overworld nor Far Dark's
-  existing dimension. Natural generation uses TerraBlender's region weighting;
-  region weight is not a percentage of total world coverage.
-
-## Checks
-
-```powershell
+.\.venv\Scripts\python.exe bridge/build_bridge.py
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe tests/terrain_integration.py
 ```
 
-The export has also been tested against a disposable copy of a 26.3 Fabric
-project: shared/client Java compilation, built JAR dependency inclusion, and a
-Fabric headless GameTest loading the biome/material data and generating a custom
-tree on custom dirt. The 20 automated tests cover export preservation, the palette, camera controls,
-water clipping, sample validation, and sampler cancellation. A packaged-app smoke
-test also generated seed-42 terrain and loaded all custom materials. Run
-`python tests/terrain_integration.py` for an opt-in check using your installed
-Minecraft cache: bundled seed reproduction, seed variation, and matching adjacent
-sample edges. This does not start Minecraft or modify a mod project.
-An interactive Minecraft client visual review is still recommended.
-
-See `tests/GAMETEST.md` for integration-test setup and `UPSTREAM.md` for provenance.
-
-## Build the Windows app
+Windows packaging:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install pyinstaller
 .\.venv\Scripts\python.exe -m PyInstaller --onefile --windowed --name BiomeConfiguratorFabric --icon icon.ico --add-data "minecraft_26_3_templates.json;." --add-data "default_terrain_26_3.json;." --add-data "bridge/terrain-sampler-26.3.jar;bridge" FabricBiomeConfigurator.py
 ```
 
-## Credits and license
+## Verification and references
 
-Original application: [aepplestan/BiomeConfigurator](https://github.com/aepplestan/BiomeConfigurator).
-This modified tool retains its GPL-3.0 license. The original README is preserved
-as `README.upstream.md`. User textures are not included in the app or source archive.
+26 automated tests cover export preservation, migration, geometry, cave/terrain
+settings, ore resources, and camera controls. All 11 landform modes were decoded
+and sampled by the installed Minecraft 26.3 engine. Real sampling confirmed that
+higher cave density creates more empty voxels. The disposable Fabric integration
+project passed biome/material loading, custom tree placement, custom ore placement
+in Gloomstone, shared/client Java compilation, and mod JAR build. See
+`tests/GAMETEST.md`. This does not replace an interactive Minecraft visual check.
+
+Fabric's [dimension concepts](https://wiki.fabricmc.net/tutorial:dimensionconcepts)
+describe the division between biome sources, generators, carvers, and surface
+rules. [Feature generation](https://docs.fabricmc.net/develop/data-generation/features)
+describes feature and placement concepts. Exact 26.3 JSON/API formats here were
+checked against the locally installed game code and resources, then tested in
+Minecraft. Custom landform presets are this tool's density graphs, not claims
+that those named world types appear in vanilla's creation menu.
+
+Original app: [aepplestan/BiomeConfigurator](https://github.com/aepplestan/BiomeConfigurator).
+The fork retains GPL-3.0 and preserves `README.upstream.md`, LICENSE, and UPSTREAM.md.

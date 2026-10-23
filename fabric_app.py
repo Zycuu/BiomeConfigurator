@@ -17,6 +17,23 @@ from fabric_support import (FabricProject, ROLE_DEFAULTS, BLOCK_DEFAULTS, defaul
 
 class FabricBiomeConfiguratorApp(BiomeConfiguratorApp):
     def __init__(self, root):
+        style = ttk.Style(root)
+        style.theme_use("clam")
+        style.configure(".", background="#172331", foreground="#dce8f3", font=("Segoe UI", 10))
+        style.configure("TNotebook", background="#111b26", borderwidth=0)
+        style.configure("TNotebook.Tab", padding=(12, 8), background="#243648")
+        style.map("TNotebook.Tab", background=[("selected", "#315875")])
+        style.configure("TButton", padding=(10, 6), background="#2b4358")
+        style.map("TButton", background=[("active", "#3a617c")])
+        style.configure("Accent.TButton", background="#287da6", foreground="white")
+        style.configure("TEntry", fieldbackground="#101c29", foreground="#e4edf5", insertcolor="white")
+        style.configure("TSpinbox", fieldbackground="#101c29", foreground="#e4edf5", arrowsize=14)
+        style.configure("TCombobox", fieldbackground="#101c29", foreground="#e4edf5", arrowsize=14)
+        style.map("TCombobox", fieldbackground=[("readonly", "#21394e")], foreground=[("readonly", "#e4edf5")])
+        style.configure("Horizontal.TProgressbar", background="#4ab7c9", troughcolor="#101c29")
+        root.configure(background="#111b26")
+        root.option_add("*TCombobox*Listbox.background", "#172738")
+        root.option_add("*TCombobox*Listbox.foreground", "#dce8f3")
         self.project = None
         self.project_path = tk.StringVar(master=root)
         self.texture_dir = tk.StringVar(master=root)
@@ -33,8 +50,10 @@ class FabricBiomeConfiguratorApp(BiomeConfiguratorApp):
         self._refresh_pending = False
         self._palette_stamp = 0
         self.terrain_window = None
+        from worldgen_studio import defaults
+        self.worldgen_config = defaults()
         super().__init__(root)
-        root.title("Biome Configurator Fabric - Minecraft 26.3")
+        root.title("Biome Configurator Studio | Fabric 26.3")
         root.geometry("1180x980")
         root.minsize(1000, 840)
         self.export_name.set("gloam_woods")
@@ -60,7 +79,7 @@ class FabricBiomeConfiguratorApp(BiomeConfiguratorApp):
         self.build_project_tab(project_tab)
         self.build_materials_tab(materials_tab)
         self.build_generation_tab(generation_tab)
-        ttk.Button(self.root, text="Open Minecraft Terrain Visualizer...", command=self.open_terrain).pack(fill=tk.X, padx=10, pady=5)
+        ttk.Button(self.root, text="Open Worldgen Studio: Terrain, Caves & Ores...", command=self.open_terrain).pack(fill=tk.X, padx=10, pady=5)
 
     def open_terrain(self):
         if self.terrain_window is not None:
@@ -144,8 +163,8 @@ class FabricBiomeConfiguratorApp(BiomeConfiguratorApp):
                                       to=128 if key == "deep_y" else (100 if key == "region_weight" else 32), width=10)
             control.grid(row=row, column=1, sticky="w", padx=10)
         ttk.Label(tab, text=("Counts are placement attempts, not guaranteed surviving trees.\n"
-                            "The preview illustrates the palette and density, not the actual worldgen algorithm.\n"
-                            "Natural terrain height still follows the Overworld's normal terrain.\n"
+                            "Open Worldgen Studio to edit landforms, noise caves, ores and feature rules.\n"
+                            "Custom shape applies to Preview world presets and optional new dimensions.\n"
                             "Both tree families currently use a configurable palette with vanilla oak-shaped generation."),
                   justify="left").grid(row=7, column=0, columnspan=2, sticky="w", pady=20)
 
@@ -192,11 +211,16 @@ class FabricBiomeConfiguratorApp(BiomeConfiguratorApp):
                        "ambient_loop": self.ambient_loop.get(), "ambient_mood": self.ambient_mood.get(), "ambient_additions": self.ambient_additions.get()})
         for key, value in self.generation.items():
             design[key] = value.get() if key == "base_biome" else int(value.get())
+        design["worldgen"] = self.terrain_window.get_config() if self.terrain_window else copy.deepcopy(self.worldgen_config)
         return design
 
     def apply_design(self, design):
         merged = default_design()
         merged.update(design)
+        from worldgen_studio import settings
+        self.worldgen_config = settings(merged)
+        if self.terrain_window:
+            self.terrain_window.load_config(self.worldgen_config)
         self.export_name.set(merged["biome"])
         for key, variable in self.texture_vars.items(): variable.set(merged["textures"].get(key, ROLE_DEFAULTS[key]))
         for key, variable in self.block_vars.items(): variable.set(merged["blocks"].get(key, BLOCK_DEFAULTS[key]))
